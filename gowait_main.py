@@ -12,6 +12,9 @@ import sys
 async def main(argv: collections.abc.Sequence[str]) -> int:
     """Main entry point."""
     parser = argparse.ArgumentParser(description=main.__doc__)
+    parser.add_argument("--replicas", metavar="REPLICAS", type=int,
+                        dest="replicas", default=2,
+                        help="Number of job replicas")
     parser.add_argument("--pattern", metavar="PATTERN",
                         dest="pattern", default="",
                         help="Pattern to watch out for.")
@@ -23,12 +26,21 @@ async def main(argv: collections.abc.Sequence[str]) -> int:
     args = parser.parse_args(args=argv[1:])
     if args.verbose:
         logging.basicConfig(level=logging.INFO)
-    job = await start(args.command, args.pattern)
-    logging.info("RETURN TO MAIN")
+    branches = []
+    for r in range(args.replicas):
+        tag = f"BRANCH-{r}"
+        branches.append(
+            asyncio.create_task(branch(tag, args.command, args.pattern)))
+    await asyncio.gather(*branches)
+    return 0
+
+async def branch(tag: str, base: list[str], pattern: str):
+    command = base + ["--name", tag]
+    job = await start(command, pattern)
+    logging.info(f"RETURN TO {tag}")
     async for raw_line in job.stdout:
         line = raw_line.decode("utf-8")
         logging.info("remainder: %s", line.rstrip())
-    return 0
 
 async def start(cmd: list[str], pattern: str) -> asyncio.subprocess.Process:
     """Starts command and returns the process after seeing the pattern."""
