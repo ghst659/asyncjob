@@ -17,8 +17,8 @@ async def main(argv: collections.abc.Sequence[str]) -> int:
     parser.add_argument("--concurrency", metavar="N", type=int,
                         dest="concurrency", default=10,
                         help="Number of concurrent I/O requests.")
-    parser.add_argument("--pattern", metavar="PATTERN",
-                        dest="pattern", default=lambda p: re.compile(x),
+    parser.add_argument("--pattern", metavar="PATTERN", default=None,
+                        dest="pattern", type=lambda p: re.compile(x),
                         help="Pattern to watch out for.")
     parser.add_argument("--links", action="store_true", dest="links",
                         help="print links in document.")
